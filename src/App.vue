@@ -28,9 +28,10 @@ export default {
   padding: 20px;
   font-size: 16px;
   background-color: #282c34;
-  border-radius: 6px;
   line-height: 1.5em;
   overflow: auto;
+  word-break: normal;
+  word-wrap: normal;
 }
 .markdown blockquote {
   font-size: 90%;

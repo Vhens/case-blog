@@ -5,13 +5,15 @@
          vhen
        </div>
        <div class="sidebar-content">
-         <span @click="toggle()">666</span>
+         <ww-tree :data="tree"></ww-tree>
        </div>
      </mu-drawer>
   </div>
 </template>
 
 <script>
+  import wwTree from '../tree'
+  import { data } from './data'
   export default {
     props: {
       open: {
@@ -21,8 +23,12 @@
     },
     data() {
       return {
-        docked: true
+        docked: true,
+        tree: data
       }
+    },
+    components: {
+      wwTree
     },
     methods: {
       toggle() {

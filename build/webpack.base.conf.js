@@ -3,7 +3,8 @@ const path = require('path')
 const utils = require('./utils')
 const config = require('../config')
 const vueLoaderConfig = require('./vue-loader.conf')
-const markdownRender = require('markdown-it')()
+const md = require('markdown-it')()
+const slugify = require('transliteration').slugify
 
 function resolve (dir) {
   return path.join(__dirname, '..', dir)
@@ -74,35 +75,53 @@ module.exports = {
         test: /\.md$/,
         loader: 'vue-markdown-loader',
         options: {
-          preventExtract: true,
           use: [
+            [require('markdown-it-anchor'), {
+              level: 2,
+              slugify: slugify,
+              permalink: true,
+              permalinkBefore: true
+            }],
             [require('markdown-it-container'), 'demo', {
-
-              validate: function (params) {
-                return params.trim().match(/^demo\s+(.*)$/);
+              validate: function(params) {
+                return params.trim().match(/^demo\s*(.*)$/);
               },
 
-              render: function (tokens, idx) {
+              render: function(tokens, idx) {
+                var m = tokens[idx].info.trim().match(/^demo\s*(.*)$/);
                 if (tokens[idx].nesting === 1) {
-                  // 1.获取第一行的内容使用markdown渲染html作为组件的描述
-                  let demoInfo = tokens[idx].info.trim().match(/^demo\s+(.*)$/);
-                  let description = (demoInfo && demoInfo.length > 1) ? demoInfo[1] : '';
-                  let descriptionHTML = description ? markdownRender.render(description) : '';
-                  // 2.获取代码块内的html和js代码
-                  let content = tokens[idx + 1].content;
-                  // 3.使用自定义开发组件【DemoBlock】来包裹内容并且渲染成案例和代码示例
-                  return `<demo-block>
-                  <div class="source" slot="source">${content}</div>
-                  ${descriptionHTML}
-                  <div class="highlight" slot="highlight">`;
-                } else {
-                  return '</div></demo-block>\n';
+                  var description = (m && m.length > 1) ? m[1] : '';
+                  var content = tokens[idx + 1].content;
+                  var html = convert(striptags.strip(content, ['script', 'style'])).replace(/(<[^>]*)=""(?=.*>)/g, '$1');
+                  var script = striptags.fetch(content, 'script');
+                  var style = striptags.fetch(content, 'style');
+                  var jsfiddle = { html: html, script: script, style: style };
+                  var descriptionHTML = description
+                    ? md.render(description)
+                    : '';
+
+                  jsfiddle = md.utils.escapeHtml(JSON.stringify(jsfiddle));
+
+                  return `<demo-block class="demo-box" :jsfiddle="${jsfiddle}">
+                            <div class="source" slot="source">${html}</div>
+                            ${descriptionHTML}
+                            <div class="highlight" slot="highlight">`;
                 }
+                return '</div></demo-block>\n';
               }
-            }]
-          ]
+            }],
+            [require('markdown-it-container'), 'tip'],
+            [require('markdown-it-container'), 'warning']
+          ],
+          preprocess: function(MarkdownIt, source) {
+            MarkdownIt.renderer.rules.table_open = function() {
+              return '<table class="table">';
+            };
+            MarkdownIt.renderer.rules.fence = wrap(MarkdownIt.renderer.rules.fence);
+            return source;
+          }
         }
-      }
+      },
     ]
   },
   node: {
