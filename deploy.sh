@@ -17,4 +17,4 @@ git commit -m 'deploy blog'
 # git push -f git@github.com:<USERNAME>/<USERNAME>.github.io.git master
 
 # 如果发布到 https://<USERNAME>.github.io/<REPO>
-git push -f git@github.com:Vhens/case-blog.git master
+git push -f https://github.com/Vhens/case-blog.git master
